@@ -35,6 +35,10 @@
 
 #undef LOG
 #undef ASSERT
+#if defined(OS_WIN)
+#define _USE_MATH_DEFINES
+#include <math.h>
+#endif
 #include "third_party/WebKit/Source/config.h"
 #include "third_party/WebKit/Source/core/frame/Frame.h"
 #include "third_party/WebKit/Source/web/WebFrameImpl.h"
@@ -106,8 +110,12 @@ void Dispatcher::OnEvent(int object_id,
 }
 
 v8::Handle<v8::Object> Dispatcher::GetObjectRegistry() {
+  // need to enter node context to access the registry in
+  // some cases, e.g. normal frame in #1519
+  node::g_context->Enter();
   v8::Handle<v8::Value> registry =
     node::g_context->Global()->Get(v8_str("__nwObjectsRegistry"));
+  node::g_context->Exit();
   // if (registry->IsNull() || registry->IsUndefined())
   //   return v8::Undefined();
   return registry->ToObject();

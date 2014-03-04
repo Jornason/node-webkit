@@ -89,7 +89,18 @@ Shell* Shell::Create(BrowserContext* browser_context,
                      int routing_id,
                      WebContents* base_web_contents) {
   WebContents::CreateParams create_params(browser_context, site_instance);
+
+  std::string filename;
+  base::DictionaryValue* manifest = GetPackage()->root();
+  if (manifest->GetString(switches::kmInjectJSDocStart, &filename))
+    create_params.nw_inject_js_doc_start = filename;
+  if (manifest->GetString(switches::kmInjectJSDocEnd, &filename))
+    create_params.nw_inject_js_doc_end = filename;
+  if (manifest->GetString(switches::kmInjectCSS, &filename))
+    create_params.nw_inject_css_fn = filename;
+
   create_params.routing_id = routing_id;
+
   WebContents* web_contents = WebContents::Create(create_params);
 
   Shell* shell = new Shell(web_contents, GetPackage()->window());
@@ -115,6 +126,10 @@ Shell* Shell::Create(WebContents* source_contents,
     params.transition_type = PageTransitionFromInt(PAGE_TRANSITION_TYPED);
     params.override_user_agent = NavigationController::UA_OVERRIDE_TRUE;
     params.frame_name = std::string();
+
+    int nw_win_id = 0;
+    manifest->GetInteger("nw_win_id", &nw_win_id);
+    params.nw_win_id = nw_win_id;
 
     new_contents->GetController().LoadURLWithParams(params);
   }

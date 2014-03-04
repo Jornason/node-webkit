@@ -18,8 +18,6 @@
 // ETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 //  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#define _USE_MATH_DEFINES
-
 #include "content/nw/src/api/window_bindings.h"
 
 #include "base/values.h"
@@ -29,6 +27,11 @@
 #include "grit/nw_resources.h"
 #undef LOG
 using namespace WebCore;
+#if defined(OS_WIN)
+#define _USE_MATH_DEFINES
+#include <math.h>
+#endif
+
 
 #include "third_party/WebKit/Source/config.h"
 #include "third_party/WebKit/Source/core/html/HTMLIFrameElement.h"
@@ -122,7 +125,11 @@ WindowBindings::CallObjectMethod(const v8::FunctionCallbackInfo<v8::Value>& args
       WebCore::HTMLIFrameElement* iframe = WebCore::V8HTMLIFrameElement::toNative(frm);
       web_frame = WebKit::WebFrameImpl::fromFrame(iframe->contentFrame());
     }
+#if defined(OS_WIN)
+    base::string16 jscript((WCHAR*)*v8::String::Value(args[3]));
+#else
     base::string16 jscript = *v8::String::Value(args[3]);
+#endif
     if (web_frame) {
       result = web_frame->executeScriptAndReturnValue(WebScriptSource(jscript));
     }
@@ -173,6 +180,7 @@ WindowBindings::CallObjectMethodSync(const v8::FunctionCallbackInfo<v8::Value>& 
     double zoom_level = args[2]->ToNumber()->Value();
     render_view->OnSetZoomLevel(zoom_level);
     args.GetReturnValue().Set(v8::Undefined());
+    return;
   }
   args.GetReturnValue().Set(remote::CallObjectMethodSync(routing_id, object_id, "Window", method, args[2]));
 }
